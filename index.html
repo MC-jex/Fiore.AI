@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fiore AI - Disco Interactivo</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial', sans-serif;
+            color: white;
+            overflow: hidden;
+            background: linear-gradient(135deg, #0c0f14, #2e2d3b, #1f1f2e);
+            background-size: 400% 400%;
+            animation: gradientMove 15s ease infinite;
+            text-align: center;
+            position: relative;
+        }
+
+        @keyframes gradientMove {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        h1 {
+            font-size: 3rem;
+            margin-top: 40px;
+            color: #ff3c00;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.6), 0 0 40px #ff3c00;
+            animation: glow 2s infinite alternate;
+        }
+
+        @keyframes glow {
+            0% { text-shadow: 0 0 10px #fff, 0 0 20px #ff3c00b9, 0 0 30px #ff3c00b9; }
+            100% { text-shadow: 0 0 20px #ff3c00b9, 0 0 30px #ff3c00b9, 0 0 40px #ff3c00b9; }
+        }
+
+        #vinyl-container {
+            margin: 40px auto;
+            width: 180px;
+            height: 180px;
+            position: relative;
+            animation: bounce 2s ease infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .vinyl-disc {
+            width: 180px;
+            height: 180px;
+            background: radial-gradient(circle, #000, #333);
+            border-radius: 50%;
+            border: 6px solid #444;
+            position: relative;
+            animation: stopSpin 2s linear infinite;
+            box-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+        }
+
+        .vinyl-disc::before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 40px;
+            height: 40px;
+            background: #ff3c00;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+        }
+
+        .spin {
+            animation: spin 2s linear infinite;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes stopSpin {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(0deg);
+            }
+        }
+
+        #assistant-button {
+            margin: 40px auto;
+            width: 90px;
+            height: 90px;
+            background: radial-gradient(circle, #f5f5f5, #cccccc);
+            border-radius: 50%;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2), inset 0 0 10px rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            transition: transform 0.3s ease;
+        }
+
+        #assistant-button::before {
+            content: "";
+            position: absolute;
+            top: 20%;
+            left: 35%;
+            width: 30%;
+            height: 50%;
+            background: #2f2f2f;
+            clip-path: polygon(0% 0%, 100% 50%, 0% 100%);
+        }
+
+        #assistant-button:hover {
+            transform: scale(1.1);
+        }
+
+        #status {
+            margin-top: 20px;
+            font-size: 16px;
+            color: #00ff9f;
+            text-shadow: 0 0 10px rgba(0, 255, 159, 0.6), 0 0 30px rgba(0, 255, 159, 0.7);
+        }
+
+        /* Estilo para los stickers */
+        .sticker {
+            position: absolute;
+            z-index: 1;
+            opacity: 0.7;
+            pointer-events: none;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .sticker.dreamcore {
+            width: 150px;
+            top: 20%;
+            left: 10%;
+            transform: rotate(-10deg);
+        }
+
+        .sticker.rock {
+            width: 130px;
+            top: 45%;
+            right: 10%;
+            transform: rotate(10deg);
+        }
+
+        .sticker.metal {
+            width: 120px;
+            top: 60%;
+            left: 60%;
+            transform: rotate(-15deg);
+        }
+
+        /* Efecto al pasar el cursor o tocar la imagen */
+        .sticker:hover, .sticker:active {
+            transform: scale(1.2); /* Aumentar el tamaño */
+            box-shadow: 0 0 15px 5px rgba(255, 255, 255, 0.7); /* Borde blanco */
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Fiore AI</h1>
+    <div id="vinyl-container">
+        <div id="vinyl" class="vinyl-disc"></div>
+    </div>
+
+    <p>Presiona el botón para interactuar con Fiore.</p>
+    <div id="status">Esperando comando...</div>
+
+    <div id="assistant-button"></div>
+
+    <!-- Stickers tipo dreamcore y rock -->
+    <img src="wvndwm4b-removebg-preview.png" class="sticker dreamcore" alt="Dreamcore Sticker">
+    <img src="fnaf.png" class="sticker rock" alt="Rock Sticker">
+    <img src="gatop.png" class="sticker metal" alt="Metal Sticker">
+
+    <script>
+        const statusEl = document.getElementById('status');
+        const assistantButton = document.getElementById('assistant-button');
+        const vinylDisc = document.getElementById('vinyl');
+        let recognition;
+        let isListening = false;
+
+        // Inicializar reconocimiento de voz
+        function initSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                statusEl.textContent = "Tu navegador no soporta reconocimiento de voz.";
+                return;
+            }
+
+            recognition = new SpeechRecognition();
+            recognition.lang = 'es-ES';
+
+            recognition.onstart = () => {
+                statusEl.textContent = "Escuchando...";
+                isListening = true;
+            };
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript.toLowerCase();
+                console.log("Comando recibido:", transcript);
+                handleCommands(transcript);
+            };
+
+            recognition.onerror = (event) => {
+                statusEl.textContent = "Error en el reconocimiento. Intenta de nuevo.";
+                console.error(event.error);
+            };
+
+            recognition.onend = () => {
+                isListening = false;
+                statusEl.textContent = "Esperando comando...";
+            };
+        }
+
+        // Manejar comandos
+        function handleCommands(transcript) {
+            if (transcript.includes("hola")) {
+                respond("Hola, ¿en qué puedo ayudarte?");
+            } else if (transcript.includes("qué hora es")) {
+                const horaActual = new Date().toLocaleTimeString('es-ES');
+                respond(`La hora actual es ${horaActual}.`);
+            } else if (transcript.includes("qué día es")) {
+                const fechaActual = new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                respond(`Hoy es ${fechaActual}.`);
+            } else if (transcript.includes("quién eres")) {
+                respond("Soy Fiore, tu asistente personal.");
+            } else if (transcript.includes("alfredo")){
+                respond("Para entender la historia de Five Nights at Freddy's hay que olvidarse que estos son juegos y quiero que tomen realmente a esta saga como lo que es. ¿Terror? Sí, pero sobre todo, ciencia ficción.");
+            } else {
+                respond("Lo siento, no entendí ese comando.");
+            }
+        }
+
+        // Mostrar mensaje y hablar
+        function respond(message) {
+            statusEl.textContent = message;
+            speak(message);
+        }
+
+        // Hablar respuesta
+        function speak(message) {
+            const speech = new SpeechSynthesisUtterance(message);
+            speech.lang = 'es-ES';
+            window.speechSynthesis.speak(speech);
+        }
+
+        // Activar/disactivar animación del disco de vinilo
+        function toggleVinylSpin() {
+            if (vinylDisc.classList.contains('spin')) {
+                vinylDisc.classList.remove('spin');
+            } else {
+                vinylDisc.classList.add('spin');
+            }
+        }
+
+        // Botón para activar reconocimiento y animación
+        assistantButton.addEventListener('click', () => {
+            if (!recognition) {
+                statusEl.textContent = "Inicializando reconocimiento de voz...";
+                initSpeechRecognition();
+            }
+            if (isListening) {
+                recognition.stop();
+                toggleVinylSpin(); // Detener giro
+            } else {
+                recognition.start();
+                toggleVinylSpin(); // Iniciar giro
+            }
+        });
+
+        // Iniciar reconocimiento al cargar
+        initSpeechRecognition();
+    </script>
+
+</body>
+</html>
