@@ -13,15 +13,22 @@
             overflow: hidden;
             background: linear-gradient(135deg, #0c0f14, #2e2d3b, #1f1f2e);
             background-size: 400% 400%;
-            animation: gradientMove 15s ease infinite;
+            animation: gradientMove 15s ease infinite, backgroundBlink 1.5s alternate infinite;
             text-align: center;
             position: relative;
         }
 
+        /* Animación para el fondo */
         @keyframes gradientMove {
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
+        }
+
+        @keyframes backgroundBlink {
+            0% { background-color: rgba(0, 0, 0, 0.8); }
+            50% { background-color: rgba(255, 0, 0, 0.4); }
+            100% { background-color: rgba(0, 0, 0, 0.8); }
         }
 
         h1 {
@@ -115,7 +122,7 @@
             content: "";
             position: absolute;
             top: 20%;
-            left: 35%;
+            left: 50%;
             width: 30%;
             height: 50%;
             background: #2f2f2f;
@@ -133,46 +140,71 @@
             text-shadow: 0 0 10px rgba(0, 255, 159, 0.6), 0 0 30px rgba(0, 255, 159, 0.7);
         }
 
+        /* Estilo para las imágenes */
+        .interactive-img {
+            width: 120px;
+            height: auto;
+            cursor: pointer;
+            margin: 20px 0;
+            display: block;
+            position: absolute;
+            transition: transform 0.3s ease; /* Transición para el cambio de tamaño */
+        }
+
+        /* Estilo para la imagen de Fio */
+        #fio-img {
+            top: 50px;
+            left: 20px;
+        }
+
+        /* Ajustes de tamaño de las imágenes */
+        @media (min-width: 768px) {
+            .interactive-img {
+                width: 150px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .interactive-img {
+                width: 100px;
+            }
+        }
+
+        /* Efecto de aumento al hacer clic */
+        .interactive-img:active {
+            transform: scale(1.1); /* Aumentar tamaño al hacer clic */
+        }
+
         /* Estilo para los stickers */
         .sticker {
+            width: 80px;
+            height: auto;
             position: absolute;
-            z-index: 1;
-            opacity: 0.7;
-            pointer-events: none;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            bottom: 20px;
         }
 
-        .sticker.dreamcore {
-            width: 150px;
-            top: 20%;
+        .dreamcore {
             left: 10%;
-            transform: rotate(-10deg);
         }
 
-        .sticker.rock {
-            width: 130px;
-            top: 45%;
+        .rock {
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .metal {
             right: 10%;
-            transform: rotate(10deg);
         }
 
-        .sticker.metal {
-            width: 120px;
-            top: 60%;
-            left: 60%;
-            transform: rotate(-15deg);
-        }
-
-        /* Efecto al pasar el cursor o tocar la imagen */
-        .sticker:hover, .sticker:active {
-            transform: scale(1.2); /* Aumentar el tamaño */
-            box-shadow: 0 0 15px 5px rgba(255, 255, 255, 0.7); /* Borde blanco */
-        }
     </style>
 </head>
 <body>
 
     <h1>Fiore AI</h1>
+
+    <!-- Imagen de Fio que reproduce el audio -->
+    <img src="fio.png" id="fio-img" class="interactive-img" alt="Imagen de Fio" onclick="playAudio()">
+
     <div id="vinyl-container">
         <div id="vinyl" class="vinyl-disc"></div>
     </div>
@@ -182,19 +214,20 @@
 
     <div id="assistant-button"></div>
 
-    <!-- Stickers tipo dreamcore y rock -->
-    <img src="wvndwm4b-removebg-preview.png" class="sticker dreamcore" alt="Dreamcore Sticker">
-    <img src="fnaf.png" class="sticker rock" alt="Rock Sticker">
-    <img src="gatop.png" class="sticker metal" alt="Metal Sticker">
+    <!-- Stickers -->
+    <img src="wvndwm4b-removebg-preview.png" class="sticker dreamcore interactive-img" alt="Dreamcore Sticker">
+    <img src="gatop.png" class="sticker metal interactive-img" alt="Metal Sticker">
 
     <script>
         const statusEl = document.getElementById('status');
         const assistantButton = document.getElementById('assistant-button');
         const vinylDisc = document.getElementById('vinyl');
+        const fioAudio = new Audio('naris.mp3'); // Audio para Fio
+        const fioredAudio = new Audio('fiored.mp3'); // Nuevo audio para "fiore"
+
         let recognition;
         let isListening = false;
 
-        // Inicializar reconocimiento de voz
         function initSpeechRecognition() {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             if (!SpeechRecognition) {
@@ -212,13 +245,11 @@
 
             recognition.onresult = (event) => {
                 const transcript = event.results[0][0].transcript.toLowerCase();
-                console.log("Comando recibido:", transcript);
                 handleCommands(transcript);
             };
 
             recognition.onerror = (event) => {
                 statusEl.textContent = "Error en el reconocimiento. Intenta de nuevo.";
-                console.error(event.error);
             };
 
             recognition.onend = () => {
@@ -227,39 +258,23 @@
             };
         }
 
-        // Manejar comandos
         function handleCommands(transcript) {
             if (transcript.includes("hola")) {
                 respond("Hola, ¿en qué puedo ayudarte?");
-            } else if (transcript.includes("qué hora es")) {
-                const horaActual = new Date().toLocaleTimeString('es-ES');
-                respond(`La hora actual es ${horaActual}.`);
-            } else if (transcript.includes("qué día es")) {
-                const fechaActual = new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-                respond(`Hoy es ${fechaActual}.`);
-            } else if (transcript.includes("quién eres")) {
-                respond("Soy Fiore, tu asistente personal.");
-            } else if (transcript.includes("alfredo")){
-                respond("Para entender la historia de Five Nights at Freddy's hay que olvidarse que estos son juegos y quiero que tomen realmente a esta saga como lo que es. ¿Terror? Sí, pero sobre todo, ciencia ficción.");
+            } else if (transcript.includes("fiore")) {
+                playFioredAudio(); // Reproducir el audio fiored.mp3
+            } else if (transcript.includes("estoy aburrido") || transcript.includes("estoy aburrida")) {
+                window.open("https://www.youtube.com/watch?v=IOXrdIXUjKY&list=PLl4m3lRtdFo2AyaJRE6gkfXCbmCowFKPY", "_blank");
+                respond("Te enviaré algo para entretenerte.");
             } else {
                 respond("Lo siento, no entendí ese comando.");
             }
         }
 
-        // Mostrar mensaje y hablar
         function respond(message) {
             statusEl.textContent = message;
-            speak(message);
         }
 
-        // Hablar respuesta
-        function speak(message) {
-            const speech = new SpeechSynthesisUtterance(message);
-            speech.lang = 'es-ES';
-            window.speechSynthesis.speak(speech);
-        }
-
-        // Activar/disactivar animación del disco de vinilo
         function toggleVinylSpin() {
             if (vinylDisc.classList.contains('spin')) {
                 vinylDisc.classList.remove('spin');
@@ -268,22 +283,38 @@
             }
         }
 
-        // Botón para activar reconocimiento y animación
         assistantButton.addEventListener('click', () => {
             if (!recognition) {
-                statusEl.textContent = "Inicializando reconocimiento de voz...";
                 initSpeechRecognition();
             }
             if (isListening) {
                 recognition.stop();
-                toggleVinylSpin(); // Detener giro
+                toggleVinylSpin();
             } else {
                 recognition.start();
-                toggleVinylSpin(); // Iniciar giro
+                toggleVinylSpin();
             }
         });
 
-        // Iniciar reconocimiento al cargar
+        // Reproducir audio al hacer clic en la imagen de Fio
+        function playAudio() {
+            fioAudio.play();
+        }
+
+        // Reproducir el audio fiored.mp3 cuando se diga "fiore"
+        function playFioredAudio() {
+            fioredAudio.play();
+        }
+
+        function announceCurrentTime() {
+            const currentDate = new Date();
+            const hours = currentDate.getHours();
+            const minutes = currentDate.getMinutes();
+            const seconds = currentDate.getSeconds();
+            const timeString = `La hora actual es ${hours}:${minutes}:${seconds}`;
+            respond(timeString);
+        }
+
         initSpeechRecognition();
     </script>
 
